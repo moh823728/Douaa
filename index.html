@@ -789,6 +789,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            overflow: hidden;
         }
 
         .letter {
@@ -799,6 +800,8 @@
             align-items: center;
             flex-direction: column;
             animation: letter-lift 3s ease-in-out infinite;
+            transform-origin: center center;
+            transition: transform 0.3s ease;
         }
 
         .envelope {
@@ -1357,6 +1360,10 @@
                 padding: 10px 20px;
                 margin-top: 20px;
             }
+
+            .letter {
+                transform: scale(0.85);
+            }
         }
 
         @media (max-width: 480px) {
@@ -1364,6 +1371,16 @@
                 font-size: 14px;
                 padding: 8px 16px;
                 margin-top: 15px;
+            }
+
+            .letter {
+                transform: scale(0.7);
+            }
+        }
+
+        @media (max-width: 360px) {
+            .letter {
+                transform: scale(0.58);
             }
         }
 
