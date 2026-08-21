@@ -99,6 +99,29 @@
             0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.25; }
             50% { transform: translateY(-35px) rotate(15deg); opacity: 0.5; }
         }
+
+        .music-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 12px 20px;
+            color: #d4af37;
+            font-family: 'Georgia', serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .music-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -110,10 +133,49 @@
         <p class="subtitle">Do you want Marry Me Douaa</p>
     </div>
 
+    <audio id="bg-music" loop>
+        <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" type="audio/mpeg">
+    </audio>
+    <button class="music-toggle" id="music-toggle">🎵 Click to Play Music</button>
+
     <!-- Three.js and dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <!-- Audio Player Script -->
+    <script>
+        const audio = document.getElementById('bg-music');
+        const musicToggle = document.getElementById('music-toggle');
+        let firstUserInteraction = false;
+
+        // Music toggle button handler
+        musicToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (audio.paused) {
+                audio.play().then(() => {
+                    musicToggle.textContent = '🎵 Music On';
+                }).catch(err => console.log('Audio play error:', err));
+            } else {
+                audio.pause();
+                musicToggle.textContent = '🎵 Music Off';
+            }
+        });
+
+        // Auto-play on first user interaction anywhere on the page
+        function attemptAutoPlay() {
+            if (!firstUserInteraction && audio.paused) {
+                audio.play().then(() => {
+                    firstUserInteraction = true;
+                    musicToggle.textContent = '🎵 Music On';
+                }).catch(err => console.log('Auto-play prevented:', err));
+            }
+        }
+
+        // Add event listeners for first user interaction
+        document.addEventListener('click', attemptAutoPlay, { once: true });
+        document.addEventListener('touchstart', attemptAutoPlay, { once: true });
+    </script>
 
     <script>
         // Scene setup
