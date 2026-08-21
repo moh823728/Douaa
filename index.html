@@ -146,11 +146,36 @@
         const ytPlayer = document.getElementById('yt-player');
         const musicToggle = document.getElementById('music-toggle');
         let isMusicPlaying = false;
-        let firstUserInteraction = false;
+        let isPreBuffered = false;
 
         // PostMessage API commands for YouTube iframe
         function sendYouTubeCommand(command) {
             ytPlayer.contentWindow.postMessage('{"event":"command","func":"' + command + '","args":""}', '*');
+        }
+
+        // Pre-buffering strategy - force mobile browser to load video instantly on first touch
+        function preBufferAudio() {
+            if (!isPreBuffered) {
+                // Send playVideo and mute to force pre-buffering in background
+                sendYouTubeCommand('playVideo');
+                sendYouTubeCommand('mute');
+                isPreBuffered = true;
+            }
+        }
+
+        // Global pre-buffering on first touch/interaction anywhere on screen
+        window.addEventListener('touchstart', preBufferAudio, { once: true });
+        window.addEventListener('pointerdown', preBufferAudio, { once: true });
+
+        // Instant playback on box open - since audio is already buffered
+        function playInstantAudio() {
+            if (isPreBuffered) {
+                // Unmute and play - zero latency since stream is already buffered
+                sendYouTubeCommand('unMute');
+                sendYouTubeCommand('playVideo');
+                isMusicPlaying = true;
+                musicToggle.textContent = '🎵 Music On';
+            }
         }
 
         // Music toggle button handler
@@ -167,21 +192,6 @@
                 musicToggle.textContent = '🎵 Music Off';
             }
         });
-
-        // Auto-play on first user interaction anywhere on the page
-        function attemptAutoPlay() {
-            if (!firstUserInteraction) {
-                sendYouTubeCommand('playVideo');
-                sendYouTubeCommand('unMute');
-                firstUserInteraction = true;
-                isMusicPlaying = true;
-                musicToggle.textContent = '🎵 Music On';
-            }
-        }
-
-        // Add event listeners for first user interaction
-        document.addEventListener('click', attemptAutoPlay, { once: true });
-        document.addEventListener('touchstart', attemptAutoPlay, { once: true });
     </script>
 
     <script>
@@ -562,6 +572,9 @@
             isAnimating = true;
 
             if (!isOpen) {
+                // Instant audio playback on box open - zero latency since pre-buffered
+                playInstantAudio();
+
                 // Open the box - rotate lid around rear hinge
                 gsap.to(lidGroup.rotation, {
                     x: -Math.PI * 0.65, // ~110 degrees
