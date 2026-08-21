@@ -163,71 +163,91 @@
                     'playlist': TARGET_VIDEO_ID,
                     'rel': 0,
                     'modestbranding': 1,
-                    'playsinline': 1
+                    'playsinline': 1,
+                    'enablejsapi': 1
                 },
                 events: {
+                    'onReady': onPlayerReady,
                     'onStateChange': onPlayerStateChange
                 }
             });
         }
 
-        // AUTOMATIC GUARD: Force reload target video if YouTube attempts to play a random video
-        function onPlayerStateChange(event) {
-            if (player && player.getVideoData) {
-                const currentVideo = player.getVideoData().video_id;
-                if (currentVideo && currentVideo !== TARGET_VIDEO_ID) {
-                    player.loadVideoById(TARGET_VIDEO_ID, 0);
-                }
+        function onPlayerReady(event) {
+            if (player && typeof player.mute === 'function') {
+                player.mute();
             }
         }
 
-        // Strict single video lock using official API
+        // STRICT GUARD: Intercept ENDED (0) and PLAYING (1) states to block external recommendations
+        function onPlayerStateChange(event) {
+            if (!player || typeof player.getVideoData !== 'function') return;
+
+            const currentVideo = player.getVideoData().video_id;
+
+            // If ended, immediately replay the same target video
+            if (event.data === YT.PlayerState.ENDED) {
+                player.loadVideoById(TARGET_VIDEO_ID, 0);
+                player.playVideo();
+                return;
+            }
+
+            // If playing any video that is NOT our target, kill it and force target video
+            if (event.data === YT.PlayerState.PLAYING && currentVideo && currentVideo !== TARGET_VIDEO_ID) {
+                player.stopVideo();
+                player.loadVideoById(TARGET_VIDEO_ID, 0);
+                player.playVideo();
+            }
+        }
+
         function playAudioDirectly() {
             if (player && typeof player.loadVideoById === 'function') {
-                player.loadVideoById(TARGET_VIDEO_ID, 0);
+                const currentVideo = player.getVideoData ? player.getVideoData().video_id : null;
+                if (currentVideo !== TARGET_VIDEO_ID) {
+                    player.loadVideoById(TARGET_VIDEO_ID, 0);
+                } else {
+                    player.playVideo();
+                }
                 if (typeof player.unMute === 'function') {
                     player.unMute();
                 }
             }
         }
 
-        // Pre-buffering strategy using official API
         function preBufferAudio() {
-            if (!isPreBuffered && player && typeof player.loadVideoById === 'function') {
-                player.loadVideoById(TARGET_VIDEO_ID, 0);
+            if (!isPreBuffered && player && typeof player.playVideo === 'function') {
                 if (typeof player.mute === 'function') {
                     player.mute();
                 }
+                player.playVideo();
                 isPreBuffered = true;
             }
         }
 
-        // Global pre-buffering on first touch/interaction anywhere on screen
+        // Pre-buffering handlers
         window.addEventListener('touchstart', preBufferAudio, { once: true });
         window.addEventListener('pointerdown', preBufferAudio, { once: true });
 
-        // Instant playback on box open using official API
         function playInstantAudio() {
-            if (isPreBuffered && player) {
+            if (player) {
                 playAudioDirectly();
                 isMusicPlaying = true;
-                musicToggle.textContent = '🎵 Music On';
+                musicToggle.textContent = '🔊 Music On';
             }
         }
 
-        // Music toggle button handler using official API
         musicToggle.addEventListener('click', function(e) {
             e.stopPropagation();
             if (!isMusicPlaying) {
                 playAudioDirectly();
                 isMusicPlaying = true;
-                musicToggle.textContent = '🎵 Music On';
+                musicToggle.textContent = '🔊 Music On';
             } else {
                 if (player && typeof player.pauseVideo === 'function') {
                     player.pauseVideo();
                 }
                 isMusicPlaying = false;
-                musicToggle.textContent = '🎵 Music Off';
+                musicToggle.textContent = '🔇 Music Off';
             }
         });
     </script>
