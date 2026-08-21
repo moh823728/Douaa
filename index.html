@@ -133,9 +133,7 @@
         <p class="subtitle">Do you want Marry Me Douaa</p>
     </div>
 
-    <audio id="bg-music" loop>
-        <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" type="audio/mpeg">
-    </audio>
+    <iframe id="yt-player" width="0" height="0" src="https://www.youtube.com/embed/SKfi0V8NRhQ?enablejsapi=1&autoplay=1&loop=1&playlist=SKfi0V8NRhQ&controls=0" allow="autoplay" style="position:absolute; width:0; height:0; border:0; opacity:0; pointer-events:none;"></iframe>
     <button class="music-toggle" id="music-toggle">🎵 Click to Play Music</button>
 
     <!-- Three.js and dependencies -->
@@ -143,32 +141,41 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-    <!-- Audio Player Script -->
+    <!-- YouTube Audio Player Script -->
     <script>
-        const audio = document.getElementById('bg-music');
+        const ytPlayer = document.getElementById('yt-player');
         const musicToggle = document.getElementById('music-toggle');
+        let isMusicPlaying = false;
         let firstUserInteraction = false;
+
+        // PostMessage API commands for YouTube iframe
+        function sendYouTubeCommand(command) {
+            ytPlayer.contentWindow.postMessage('{"event":"command","func":"' + command + '","args":""}', '*');
+        }
 
         // Music toggle button handler
         musicToggle.addEventListener('click', function(e) {
             e.stopPropagation();
-            if (audio.paused) {
-                audio.play().then(() => {
-                    musicToggle.textContent = '🎵 Music On';
-                }).catch(err => console.log('Audio play error:', err));
+            if (!isMusicPlaying) {
+                sendYouTubeCommand('playVideo');
+                sendYouTubeCommand('unMute');
+                isMusicPlaying = true;
+                musicToggle.textContent = '🎵 Music On';
             } else {
-                audio.pause();
+                sendYouTubeCommand('pauseVideo');
+                isMusicPlaying = false;
                 musicToggle.textContent = '🎵 Music Off';
             }
         });
 
         // Auto-play on first user interaction anywhere on the page
         function attemptAutoPlay() {
-            if (!firstUserInteraction && audio.paused) {
-                audio.play().then(() => {
-                    firstUserInteraction = true;
-                    musicToggle.textContent = '🎵 Music On';
-                }).catch(err => console.log('Auto-play prevented:', err));
+            if (!firstUserInteraction) {
+                sendYouTubeCommand('playVideo');
+                sendYouTubeCommand('unMute');
+                firstUserInteraction = true;
+                isMusicPlaying = true;
+                musicToggle.textContent = '🎵 Music On';
             }
         }
 
