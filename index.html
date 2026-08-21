@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Special Gift</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0d0505 0%, #1a0a0a 50%, #0d0505 100%);
+            min-height: 100vh;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(13, 5, 5, 0.4) 100%);
+        }
+
+        .content {
+            position: fixed;
+            bottom: 8%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            text-align: center;
+            pointer-events: none;
+            color: #d4af37;
+            text-shadow: 0 0 25px rgba(212, 175, 55, 0.6);
+        }
+
+        .title {
+            font-size: clamp(1.8rem, 4.5vw, 3.5rem);
+            font-weight: normal;
+            letter-spacing: 0.35em;
+            margin-bottom: 0.8rem;
+            opacity: 0;
+            animation: fadeIn 2s ease-out 1s forwards;
+        }
+
+        .subtitle {
+            font-size: clamp(0.9rem, 2.2vw, 1.3rem);
+            letter-spacing: 0.25em;
+            opacity: 0;
+            animation: fadeIn 2s ease-out 2s forwards;
+            color: #c9a227;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bokeh {
+            position: fixed;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.25) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+            animation: float 10s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.25; }
+            50% { transform: translateY(-25px) scale(1.15); opacity: 0.4; }
+        }
+
+        .heart {
+            position: fixed;
+            font-size: 20px;
+            color: rgba(212, 175, 55, 0.35);
+            pointer-events: none;
+            z-index: 0;
+            animation: heartFloat 7s ease-in-out infinite;
+        }
+
+        @keyframes heartFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.25; }
+            50% { transform: translateY(-35px) rotate(15deg); opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div class="overlay"></div>
+    
+    <div class="content">
+        <h1 class="title">For You</h1>
+        <p class="subtitle">Do you want Marry Me Douaa</p>
+    </div>
+
+    <!-- Three.js and dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.3;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // OrbitControls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 4;
+        controls.maxDistance = 15;
+        controls.maxPolarAngle = Math.PI / 2 + 0.2;
+
+        // Camera position
+        camera.position.set(0, 6, 12);
+        controls.update();
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffd700, 0.3);
+        scene.add(ambientLight);
+
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1.3);
+        mainLight.position.set(5, 12, 5);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        scene.add(mainLight);
+
+        const fillLight = new THREE.DirectionalLight(0xffa500, 0.7);
+        fillLight.position.set(-5, 8, -5);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.PointLight(0xffd700, 1.2, 25);
+        rimLight.position.set(0, 6, -6);
+        scene.add(rimLight);
+
+        // Diamond-specific light for brilliance
+        const diamondLight = new THREE.PointLight(0x0066ff, 1.2, 8);
+        diamondLight.position.set(0, 1.5, 1);
+        scene.add(diamondLight);
+
+        // Materials
+        const goldMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffd700,
+            metalness: 0.98,
+            roughness: 0.1,
+            envMapIntensity: 1.2
+        });
+
+        const burgundyVelvetMaterial = new THREE.MeshStandardMaterial({
+            color: 0x4a0e17,
+            roughness: 0.8,
+            metalness: 0.1
+        });
+
+        const darkVelvetMaterial = new THREE.MeshStandardMaterial({
+            color: 0x1a0508,
+            roughness: 0.95,
+            metalness: 0.05
+        });
+
+        // HIGH-REFRACTION PHYSICAL MATERIAL - Realistic glass/gem appearance
+        const blueDiamondMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0x0066ff,
+            emissive: 0x001133,
+            emissiveIntensity: 0.25,
+            roughness: 0.0,
+            metalness: 0.1,
+            transmission: 0.45,      // Reduced transparency for richer blue hue
+            opacity: 0.95,
+            transparent: true,
+            ior: 2.417,               // Index of Refraction for real diamond
+            reflectivity: 0.9,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.0,
+            flatShading: true,       // Crisp, sharp facets reflections
+            side: THREE.DoubleSide   // PREVENTS SEE-THROUGH FACET LOSS
+        });
+
+        // Ring Box Group
+        const boxGroup = new THREE.Group();
+        scene.add(boxGroup);
+
+        // Create luxury octagonal box base
+        function createOctagonalBox(width, height, depth, segments) {
+            const shape = new THREE.Shape();
+            const radius = Math.min(width, depth) / 2;
+            const sides = segments;
+            
+            for (let i = 0; i <= sides; i++) {
+                const angle = (i / sides) * Math.PI * 2 - Math.PI / 2;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                if (i === 0) {
+                    shape.moveTo(x, y);
+                } else {
+                    shape.lineTo(x, y);
+                }
+            }
+            
+            const extrudeSettings = {
+                steps: 1,
+                depth: height,
+                bevelEnabled: true,
+                bevelThickness: 0.08,
+                bevelSize: 0.08,
+                bevelSegments: 3
+            };
+            
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geometry.rotateX(Math.PI / 2);
+            return geometry;
+        }
+
+        // Box base - luxury octagonal shape
+        const boxBaseGeometry = createOctagonalBox(3.2, 1.0, 3.2, 8);
+        const boxBase = new THREE.Mesh(boxBaseGeometry, burgundyVelvetMaterial);
+        boxBase.position.y = 0.5;
+        boxBase.castShadow = true;
+        boxBase.receiveShadow = true;
+        boxGroup.add(boxBase);
+
+        // REMOVED: baseTrim1, baseTrim2 - floating gold trims removed
+
+        // Box interior (dark velvet)
+        const interiorGeometry = createOctagonalBox(2.8, 0.7, 2.8, 8);
+        const interior = new THREE.Mesh(interiorGeometry, darkVelvetMaterial);
+        interior.position.y = 0.85;
+        interior.scale.set(0.9, 0.7, 0.9);
+        boxGroup.add(interior);
+
+        // Deep velvet cushion slot for ring
+        const cushionSlotGeometry = new THREE.BoxGeometry(1.4, 0.5, 1.0);
+        const cushionSlot = new THREE.Mesh(cushionSlotGeometry, darkVelvetMaterial);
+        cushionSlot.position.set(0, 0.4, 0);
+        boxGroup.add(cushionSlot);
+
+        // Ring cushion top - elegant curved surface
+        const cushionTopGeometry = new THREE.BoxGeometry(1.6, 0.12, 1.2);
+        const cushionTop = new THREE.Mesh(cushionTopGeometry, darkVelvetMaterial);
+        cushionTop.position.set(0, 0.5, 0);
+        boxGroup.add(cushionTop);
+
+        // REMOVED: cushionTrim - floating gold trim removed
+
+        // Ring Group - HIDDEN by default, VERTICAL placement
+        const ringGroup = new THREE.Group();
+        ringGroup.position.set(0, 0.6, 0); // Starting position in cushion slot
+        ringGroup.visible = false; // HIDDEN when box is closed
+        boxGroup.add(ringGroup);
+
+        // Ring band - VERTICAL orientation (standing upright facing front)
+        const ringRadius = 0.4;
+        const ringTube = 0.06;
+        const ringGeometry = new THREE.TorusGeometry(ringRadius, ringTube, 16, 100);
+        const ring = new THREE.Mesh(ringGeometry, goldMaterial);
+        ring.rotation.x = 0; // Upright vertical orientation
+        ring.rotation.z = 0; // Facing front/camera
+        ring.castShadow = true;
+        ringGroup.add(ring);
+
+        // Realistic faceted diamond geometry using custom vertices & indices
+        function createFacetedDiamondGeometry() {
+            const vertices = [
+                // Top Table center (lowered height)
+                0, 0.10, 0,
+                // Crown upper ring - WIDER TABLE & SHORTER HEIGHT
+                0.22, 0.10, 0,    0.155, 0.10, 0.155,   0, 0.10, 0.22,   -0.155, 0.10, 0.155,
+                -0.22, 0.10, 0,   -0.155, 0.10, -0.155,  0, 0.10, -0.22,  0.155, 0.10, -0.155,
+                // Girdle outer ring (center boundary)
+                0.35, 0, 0,       0.247, 0, 0.247,      0, 0, 0.35,      -0.247, 0, 0.247,
+                -0.35, 0, 0,      -0.247, 0, -0.247,     0, 0, -0.35,     0.247, 0, -0.247,
+                // Pavilion bottom tip (Culet)
+                0, -0.4, 0
+            ];
+
+            const indices = [];
+            for (let i = 1; i <= 8; i++) {
+                const next = i === 8 ? 1 : i + 1;
+                indices.push(0, i, next);
+            }
+            for (let i = 1; i <= 8; i++) {
+                const next = i === 8 ? 1 : i + 1;
+                const g1 = i + 8;
+                const g2 = next + 8;
+                indices.push(i, g1, next);
+                indices.push(next, g1, g2);
+            }
+            for (let i = 9; i <= 16; i++) {
+                const next = i === 16 ? 9 : i + 1;
+                indices.push(i, 17, next);
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setIndex(indices);
+            geometry.computeVertexNormals();
+            return geometry;
+        }
+
+        const diamondGeometry = createFacetedDiamondGeometry();
+        const blueDiamond = new THREE.Mesh(diamondGeometry, blueDiamondMaterial);
+        
+        // REALISTIC FACETED MESH PLACEMENT & SCALE
+        blueDiamond.scale.set(1.4, 1.4, 1.4);
+        blueDiamond.position.set(0, ringRadius + 0.61, 0);
+        blueDiamond.castShadow = true;
+        ringGroup.add(blueDiamond);
+
+        // Gold Setting Cup - base rests directly on top of ring band
+        const settingCupGeometry = new THREE.CylinderGeometry(0.15, 0.12, 0.1, 16);
+        const settingCup = new THREE.Mesh(settingCupGeometry, goldMaterial);
+        settingCup.position.set(0, ringRadius + 0.05, 0);
+        ringGroup.add(settingCup);
+
+        // Box lid with proper hinge pivot
+        const lidGroup = new THREE.Group();
+        // Hinge pivot at top-back edge
+        lidGroup.position.set(0, 0.9, -1.5); // z = -1.5, y = 0.9
+        boxGroup.add(lidGroup);
+
+        // Lid main body - octagonal shape
+        const lidGeometry = createOctagonalBox(3.3, 0.25, 3.3, 8);
+        const lid = new THREE.Mesh(lidGeometry, burgundyVelvetMaterial);
+        lid.position.set(0, 0.125, 1.65); // Offset from pivot
+        lid.castShadow = true;
+        lidGroup.add(lid);
+
+        // REMOVED: lidTrim1, lidTrim2 - floating gold trims removed
+
+        // Lid interior velvet
+        const lidInteriorGeometry = createOctagonalBox(2.9, 0.15, 2.9, 8);
+        const lidInterior = new THREE.Mesh(lidInteriorGeometry, darkVelvetMaterial);
+        lidInterior.position.set(0, -0.05, 1.65);
+        lidInterior.scale.set(0.9, 0.6, 0.9);
+        lidGroup.add(lidInterior);
+
+        // Central royal filigree ornament on lid - properly grouped
+        const filigreeGroup = new THREE.Group();
+        filigreeGroup.position.set(0, 0.35, 1.65);
+        lidGroup.add(filigreeGroup);
+
+        // Outer filigree ring
+        const filigreeOuterGeometry = new THREE.TorusGeometry(0.5, 0.03, 16, 32);
+        const filigreeOuter = new THREE.Mesh(filigreeOuterGeometry, goldMaterial);
+        filigreeOuter.rotation.x = Math.PI / 2;
+        filigreeGroup.add(filigreeOuter);
+
+        // Inner filigree ring
+        const filigreeInnerGeometry = new THREE.TorusGeometry(0.35, 0.025, 16, 32);
+        const filigreeInner = new THREE.Mesh(filigreeInnerGeometry, goldMaterial);
+        filigreeInner.rotation.x = Math.PI / 2;
+        filigreeGroup.add(filigreeInner);
+
+        // Raised centerpiece blue diamond gem on filigree
+        const centerGemGeometry = createFacetedDiamondGeometry();
+        const centerGem = new THREE.Mesh(centerGemGeometry, blueDiamondMaterial);
+        centerGem.scale.set(0.3, 0.3, 0.3);
+        centerGem.position.y = 0.15;
+        filigreeGroup.add(centerGem);
+
+        // Gold holder for center gem
+        const centerHolderGeometry = new THREE.CylinderGeometry(0.08, 0.1, 0.05, 16);
+        const centerHolder = new THREE.Mesh(centerHolderGeometry, goldMaterial);
+        centerHolder.position.y = 0.05;
+        filigreeGroup.add(centerHolder);
+
+        // Gold clasp mechanism on front
+        const claspGroup = new THREE.Group();
+        claspGroup.position.set(0, 0.9, 1.5);
+        boxGroup.add(claspGroup);
+
+        const claspBaseGeometry = new THREE.BoxGeometry(0.3, 0.08, 0.1);
+        const claspBase = new THREE.Mesh(claspBaseGeometry, goldMaterial);
+        claspGroup.add(claspBase);
+
+        const claspKnobGeometry = new THREE.SphereGeometry(0.06, 16, 16);
+        const claspKnob = new THREE.Mesh(claspKnobGeometry, goldMaterial);
+        claspKnob.position.z = 0.08;
+        claspGroup.add(claspKnob);
+
+        // Particle system
+        const particleCount = 250;
+        const particleGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 18;
+            positions[i * 3 + 1] = Math.random() * 12;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 18;
+            sizes[i] = Math.random() * 0.12 + 0.04;
+        }
+
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particleGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        const particleMaterial = new THREE.PointsMaterial({
+            color: 0xffd700,
+            size: 0.08,
+            transparent: true,
+            opacity: 0.5,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particles = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particles);
+
+        // Background bokeh elements
+        function createBokeh() {
+            const bokeh = document.createElement('div');
+            bokeh.className = 'bokeh';
+            bokeh.style.width = Math.random() * 120 + 60 + 'px';
+            bokeh.style.height = bokeh.style.width;
+            bokeh.style.left = Math.random() * 100 + '%';
+            bokeh.style.top = Math.random() * 100 + '%';
+            bokeh.style.animationDelay = Math.random() * 6 + 's';
+            document.body.appendChild(bokeh);
+        }
+
+        for (let i = 0; i < 10; i++) {
+            createBokeh();
+        }
+
+        // Floating hearts
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+            heart.innerHTML = '♥';
+            heart.style.left = Math.random() * 100 + '%';
+            heart.style.top = Math.random() * 100 + '%';
+            heart.style.animationDelay = Math.random() * 4 + 's';
+            heart.style.fontSize = Math.random() * 18 + 12 + 'px';
+            document.body.appendChild(heart);
+        }
+
+        for (let i = 0; i < 6; i++) {
+            createHeart();
+        }
+
+        // Animation state
+        let isOpen = false;
+        let isAnimating = false;
+
+        // Click handler
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function onMouseClick(event) {
+            if (isAnimating) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects([boxBase, lid], true);
+
+            if (intersects.length > 0) {
+                toggleBox();
+            }
+        }
+
+        function toggleBox() {
+            isAnimating = true;
+
+            if (!isOpen) {
+                // Open the box - rotate lid around rear hinge
+                gsap.to(lidGroup.rotation, {
+                    x: -Math.PI * 0.65, // ~110 degrees
+                    duration: 1.8,
+                    ease: "power2.inOut"
+                });
+
+                // Show ring midway through opening animation
+                setTimeout(() => {
+                    ringGroup.visible = true;
+                    
+                    // Dramatic ring rise animation - elevate completely above box
+                    gsap.from(ringGroup.position, {
+                        y: 0.6,
+                        duration: 1.5,
+                        ease: "power2.out"
+                    });
+                    
+                    gsap.to(ringGroup.position, {
+                        y: 1.45, // DRAMATIC elevation - ring completely above box
+                        duration: 1.5,
+                        ease: "power2.out"
+                    });
+
+                    // Scale up ring for dramatic prominence
+                    gsap.from(ringGroup.scale, {
+                        x: 0.5,
+                        y: 0.5,
+                        z: 0.5,
+                        duration: 1,
+                        ease: "elastic.out(1, 0.5)"
+                    });
+                    
+                    gsap.to(ringGroup.scale, {
+                        x: 1.25, // DRAMATIC scale for prominence
+                        y: 1.25,
+                        z: 1.25,
+                        duration: 1,
+                        ease: "elastic.out(1, 0.5)"
+                    });
+                }, 600);
+
+                // Camera movement to focus on ring - perfect eye-level view
+                gsap.to(camera.position, {
+                    x: 0,
+                    y: 3.0,
+                    z: 5.5,
+                    duration: 2,
+                    ease: "power2.inOut"
+                });
+
+                // Move controls target to focus on ring at elevated position
+                gsap.to(controls.target, {
+                    x: 0,
+                    y: 1.3,
+                    z: 0,
+                    duration: 2,
+                    ease: "power2.inOut"
+                });
+
+                // Increase particle activity
+                gsap.to(particleMaterial, {
+                    opacity: 0.8,
+                    duration: 1
+                });
+
+                // Enhance blue diamond light when box opens
+                gsap.to(diamondLight, {
+                    intensity: 2,
+                    duration: 1
+                });
+
+            } else {
+                // Hide ring immediately when closing starts
+                ringGroup.visible = false;
+                
+                // Reset ring position and scale
+                ringGroup.position.y = 0.6;
+                ringGroup.scale.set(1, 1, 1);
+
+                // Close the box
+                gsap.to(lidGroup.rotation, {
+                    x: 0,
+                    duration: 1.5,
+                    ease: "power2.inOut"
+                });
+
+                // Reset camera
+                gsap.to(camera.position, {
+                    x: 0,
+                    y: 6,
+                    z: 12,
+                    duration: 2,
+                    ease: "power2.inOut"
+                });
+
+                // Reset controls target
+                gsap.to(controls.target, {
+                    x: 0,
+                    y: 0,
+                    z: 0,
+                    duration: 2,
+                    ease: "power2.inOut"
+                });
+
+                // Reset particles
+                gsap.to(particleMaterial, {
+                    opacity: 0.5,
+                    duration: 1
+                });
+
+                // Reset blue diamond light
+                gsap.to(diamondLight, {
+                    intensity: 1.2,
+                    duration: 1
+                });
+            }
+
+            setTimeout(() => {
+                isAnimating = false;
+                isOpen = !isOpen;
+            }, 1800);
+        }
+
+        window.addEventListener('click', onMouseClick);
+        window.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            onMouseClick({ clientX: touch.clientX, clientY: touch.clientY });
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate particles
+            particles.rotation.y += 0.0004;
+            particles.rotation.x += 0.00015;
+
+            // Diamond rotation disabled - stays fixed relative to ring during camera orbit
+
+            // Center gem sparkle
+            centerGem.rotation.y += 0.015;
+
+            // Subtle box floating (gentle movement)
+            boxGroup.position.y = Math.sin(Date.now() * 0.0008) * 0.02;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initial camera animation
+        gsap.from(camera.position, {
+            y: 15,
+            z: 20,
+            duration: 2.5,
+            ease: "power2.out"
+        });
+    </script>
+</body>
+</html>
