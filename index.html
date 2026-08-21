@@ -133,7 +133,7 @@
         <p class="subtitle">Do you want Marry Me Douaa</p>
     </div>
 
-    <iframe id="yt-player" width="0" height="0" src="https://www.youtube.com/embed/SKfi0V8NRhQ?enablejsapi=1&autoplay=1&loop=1&playlist=SKfi0V8NRhQ&controls=0&rel=0" allow="autoplay" style="position:absolute; width:0; height:0; border:0; opacity:0; pointer-events:none;"></iframe>
+    <iframe id="yt-player" width="0" height="0" src="https://www.youtube.com/embed/SKfi0V8NRhQ?enablejsapi=1&autoplay=1&loop=1&playlist=SKfi0V8NRhQ&controls=0&rel=0&is_live=0&modestbranding=1" allow="autoplay" style="position:absolute; width:0; height:0; border:0; opacity:0; pointer-events:none;"></iframe>
     <button class="music-toggle" id="music-toggle">🎵 Click to Play Music</button>
 
     <!-- Three.js and dependencies -->
@@ -148,6 +148,25 @@
         let isMusicPlaying = false;
         let isPreBuffered = false;
 
+        // Strict single video lock - explicitly load ONLY video SKfi0V8NRhQ
+        function playAudioDirectly() {
+            const iframe = document.getElementById('yt-player');
+            if (iframe && iframe.contentWindow) {
+                // Explicitly load and play ONLY video SKfi0V8NRhQ
+                iframe.contentWindow.postMessage(JSON.stringify({
+                    event: 'command',
+                    func: 'loadVideoById',
+                    args: ['SKfi0V8NRhQ', 0]
+                }), '*');
+                
+                iframe.contentWindow.postMessage(JSON.stringify({
+                    event: 'command',
+                    func: 'unMute',
+                    args: []
+                }), '*');
+            }
+        }
+
         // PostMessage API commands for YouTube iframe
         function sendYouTubeCommand(command) {
             ytPlayer.contentWindow.postMessage('{"event":"command","func":"' + command + '","args":""}', '*');
@@ -156,9 +175,21 @@
         // Pre-buffering strategy - force mobile browser to load video instantly on first touch
         function preBufferAudio() {
             if (!isPreBuffered) {
-                // Send playVideo and mute to force pre-buffering in background
-                sendYouTubeCommand('playVideo');
-                sendYouTubeCommand('mute');
+                // Explicitly load the specific video ID to prevent playlist drift
+                const iframe = document.getElementById('yt-player');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage(JSON.stringify({
+                        event: 'command',
+                        func: 'loadVideoById',
+                        args: ['SKfi0V8NRhQ', 0]
+                    }), '*');
+                    
+                    iframe.contentWindow.postMessage(JSON.stringify({
+                        event: 'command',
+                        func: 'mute',
+                        args: []
+                    }), '*');
+                }
                 isPreBuffered = true;
             }
         }
@@ -167,12 +198,11 @@
         window.addEventListener('touchstart', preBufferAudio, { once: true });
         window.addEventListener('pointerdown', preBufferAudio, { once: true });
 
-        // Instant playback on box open - since audio is already buffered
+        // Instant playback on box open - strict video ID enforcement
         function playInstantAudio() {
             if (isPreBuffered) {
-                // Unmute and play - zero latency since stream is already buffered
-                sendYouTubeCommand('unMute');
-                sendYouTubeCommand('playVideo');
+                // Use strict video loading to prevent playlist drift
+                playAudioDirectly();
                 isMusicPlaying = true;
                 musicToggle.textContent = '🎵 Music On';
             }
@@ -182,8 +212,8 @@
         musicToggle.addEventListener('click', function(e) {
             e.stopPropagation();
             if (!isMusicPlaying) {
-                sendYouTubeCommand('playVideo');
-                sendYouTubeCommand('unMute');
+                // Use strict video loading to prevent playlist drift
+                playAudioDirectly();
                 isMusicPlaying = true;
                 musicToggle.textContent = '🎵 Music On';
             } else {
