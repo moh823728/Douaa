@@ -133,7 +133,7 @@
         <p class="subtitle">Do you want Marry Me Douaa</p>
     </div>
 
-    <iframe id="yt-player" width="0" height="0" src="https://www.youtube.com/embed/SKfi0V8NRhQ?enablejsapi=1&autoplay=1&loop=1&playlist=SKfi0V8NRhQ&controls=0" allow="autoplay" style="position:absolute; width:0; height:0; border:0; opacity:0; pointer-events:none;"></iframe>
+    <iframe id="yt-player" width="0" height="0" src="https://www.youtube.com/embed/SKfi0V8NRhQ?enablejsapi=1&autoplay=1&loop=1&playlist=SKfi0V8NRhQ&controls=0&rel=0" allow="autoplay" style="position:absolute; width:0; height:0; border:0; opacity:0; pointer-events:none;"></iframe>
     <button class="music-toggle" id="music-toggle">🎵 Click to Play Music</button>
 
     <!-- Three.js and dependencies -->
@@ -206,8 +206,11 @@
         controls.maxDistance = 15;
         controls.maxPolarAngle = Math.PI / 2 + 0.2;
 
-        // Camera position
-        camera.position.set(0, 6, 12);
+        // Camera position - adjusted for mobile
+        const isMobile = window.innerWidth <= 768;
+        const initialZ = isMobile ? 16 : 12; // Move camera further back on mobile
+        const initialY = isMobile ? 8 : 6;
+        camera.position.set(0, initialY, initialZ);
         controls.update();
 
         // Lighting
@@ -601,11 +604,13 @@
                     });
                 }, 600);
 
-                // Camera movement to focus on ring - perfect eye-level view
+                // Camera movement to focus on ring - perfect eye-level view (mobile-aware)
+                const targetZ = isMobile ? 8.5 : 5.5;
+                const targetY = isMobile ? 4.5 : 3.0;
                 gsap.to(camera.position, {
                     x: 0,
-                    y: 3.0,
-                    z: 5.5,
+                    y: targetY,
+                    z: targetZ,
                     duration: 2,
                     ease: "power2.inOut"
                 });
@@ -631,56 +636,14 @@
                     duration: 1
                 });
 
+                setTimeout(() => {
+                    isAnimating = false;
+                    isOpen = true; // One-way opening - box stays open
+                }, 1800);
             } else {
-                // Hide ring immediately when closing starts
-                ringGroup.visible = false;
-                
-                // Reset ring position and scale
-                ringGroup.position.y = 0.6;
-                ringGroup.scale.set(1, 1, 1);
-
-                // Close the box
-                gsap.to(lidGroup.rotation, {
-                    x: 0,
-                    duration: 1.5,
-                    ease: "power2.inOut"
-                });
-
-                // Reset camera
-                gsap.to(camera.position, {
-                    x: 0,
-                    y: 6,
-                    z: 12,
-                    duration: 2,
-                    ease: "power2.inOut"
-                });
-
-                // Reset controls target
-                gsap.to(controls.target, {
-                    x: 0,
-                    y: 0,
-                    z: 0,
-                    duration: 2,
-                    ease: "power2.inOut"
-                });
-
-                // Reset particles
-                gsap.to(particleMaterial, {
-                    opacity: 0.5,
-                    duration: 1
-                });
-
-                // Reset blue diamond light
-                gsap.to(diamondLight, {
-                    intensity: 1.2,
-                    duration: 1
-                });
-            }
-
-            setTimeout(() => {
+                // Box is already open - do nothing (one-way opening)
                 isAnimating = false;
-                isOpen = !isOpen;
-            }, 1800);
+            }
         }
 
         window.addEventListener('click', onMouseClick);
@@ -718,10 +681,12 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Initial camera animation
+        // Initial camera animation (mobile-aware)
+        const initialStartZ = isMobile ? 25 : 20;
+        const initialStartY = isMobile ? 18 : 15;
         gsap.from(camera.position, {
-            y: 15,
-            z: 20,
+            y: initialStartY,
+            z: initialStartZ,
             duration: 2.5,
             ease: "power2.out"
         });
