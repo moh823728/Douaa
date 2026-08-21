@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A Special Gift</title>
+    <script src="https://www.youtube.com/iframe_api"></script>
     <style>
         * {
             margin: 0;
@@ -133,7 +134,7 @@
         <p class="subtitle">Do you want Marry Me Douaa</p>
     </div>
 
-    <iframe id="yt-player" width="0" height="0" src="https://www.youtube.com/embed/SKfi0V8NRhQ?enablejsapi=1&autoplay=1&loop=1&playlist=SKfi0V8NRhQ&controls=0&rel=0&is_live=0&modestbranding=1" allow="autoplay" style="position:absolute; width:0; height:0; border:0; opacity:0; pointer-events:none;"></iframe>
+    <div id="yt-player" style="position:absolute; width:0; height:0; border:0; opacity:0; pointer-events:none;"></div>
     <button class="music-toggle" id="music-toggle">🎵 Click to Play Music</button>
 
     <!-- Three.js and dependencies -->
@@ -143,52 +144,59 @@
 
     <!-- YouTube Audio Player Script -->
     <script>
-        const ytPlayer = document.getElementById('yt-player');
         const musicToggle = document.getElementById('music-toggle');
         let isMusicPlaying = false;
         let isPreBuffered = false;
+        let player;
+        const TARGET_VIDEO_ID = 'SKfi0V8NRhQ';
 
-        // Strict single video lock - explicitly load ONLY video SKfi0V8NRhQ
-        function playAudioDirectly() {
-            const iframe = document.getElementById('yt-player');
-            if (iframe && iframe.contentWindow) {
-                // Explicitly load and play ONLY video SKfi0V8NRhQ
-                iframe.contentWindow.postMessage(JSON.stringify({
-                    event: 'command',
-                    func: 'loadVideoById',
-                    args: ['SKfi0V8NRhQ', 0]
-                }), '*');
-                
-                iframe.contentWindow.postMessage(JSON.stringify({
-                    event: 'command',
-                    func: 'unMute',
-                    args: []
-                }), '*');
+        // Initialize YouTube Player via official API
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('yt-player', {
+                height: '0',
+                width: '0',
+                videoId: TARGET_VIDEO_ID,
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0,
+                    'loop': 1,
+                    'playlist': TARGET_VIDEO_ID,
+                    'rel': 0,
+                    'modestbranding': 1,
+                    'playsinline': 1
+                },
+                events: {
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        // AUTOMATIC GUARD: Force reload target video if YouTube attempts to play a random video
+        function onPlayerStateChange(event) {
+            if (player && player.getVideoData) {
+                const currentVideo = player.getVideoData().video_id;
+                if (currentVideo && currentVideo !== TARGET_VIDEO_ID) {
+                    player.loadVideoById(TARGET_VIDEO_ID, 0);
+                }
             }
         }
 
-        // PostMessage API commands for YouTube iframe
-        function sendYouTubeCommand(command) {
-            ytPlayer.contentWindow.postMessage('{"event":"command","func":"' + command + '","args":""}', '*');
+        // Strict single video lock using official API
+        function playAudioDirectly() {
+            if (player && typeof player.loadVideoById === 'function') {
+                player.loadVideoById(TARGET_VIDEO_ID, 0);
+                if (typeof player.unMute === 'function') {
+                    player.unMute();
+                }
+            }
         }
 
-        // Pre-buffering strategy - force mobile browser to load video instantly on first touch
+        // Pre-buffering strategy using official API
         function preBufferAudio() {
-            if (!isPreBuffered) {
-                // Explicitly load the specific video ID to prevent playlist drift
-                const iframe = document.getElementById('yt-player');
-                if (iframe && iframe.contentWindow) {
-                    iframe.contentWindow.postMessage(JSON.stringify({
-                        event: 'command',
-                        func: 'loadVideoById',
-                        args: ['SKfi0V8NRhQ', 0]
-                    }), '*');
-                    
-                    iframe.contentWindow.postMessage(JSON.stringify({
-                        event: 'command',
-                        func: 'mute',
-                        args: []
-                    }), '*');
+            if (!isPreBuffered && player && typeof player.loadVideoById === 'function') {
+                player.loadVideoById(TARGET_VIDEO_ID, 0);
+                if (typeof player.mute === 'function') {
+                    player.mute();
                 }
                 isPreBuffered = true;
             }
@@ -198,26 +206,26 @@
         window.addEventListener('touchstart', preBufferAudio, { once: true });
         window.addEventListener('pointerdown', preBufferAudio, { once: true });
 
-        // Instant playback on box open - strict video ID enforcement
+        // Instant playback on box open using official API
         function playInstantAudio() {
-            if (isPreBuffered) {
-                // Use strict video loading to prevent playlist drift
+            if (isPreBuffered && player) {
                 playAudioDirectly();
                 isMusicPlaying = true;
                 musicToggle.textContent = '🎵 Music On';
             }
         }
 
-        // Music toggle button handler
+        // Music toggle button handler using official API
         musicToggle.addEventListener('click', function(e) {
             e.stopPropagation();
             if (!isMusicPlaying) {
-                // Use strict video loading to prevent playlist drift
                 playAudioDirectly();
                 isMusicPlaying = true;
                 musicToggle.textContent = '🎵 Music On';
             } else {
-                sendYouTubeCommand('pauseVideo');
+                if (player && typeof player.pauseVideo === 'function') {
+                    player.pauseVideo();
+                }
                 isMusicPlaying = false;
                 musicToggle.textContent = '🎵 Music Off';
             }
